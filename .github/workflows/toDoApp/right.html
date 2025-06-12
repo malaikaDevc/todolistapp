@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>ToDo List App</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.1.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+    <style>
+      body {
+        background-color: rgb(30, 144, 220);
+      }
+      .container {
+        width: 500px;
+        padding: 15px;
+        background-color: aliceblue;
+        margin-top: 50px;
+      }
+      .appName {
+        font-size: 20px;
+        font-weight: 700;
+        text-align: center;
+      }
+      #toDo-list li {
+        list-style: none;
+      }
+      #toDo-list .list {
+        display: flex;
+        margin-top: 10px;
+      }
+      #toDo-list .col1 {
+        margin-left: 200px;
+      }
+      #toDo-list .col1 button {
+        margin-left: 10px;
+        margin-top: 10px;
+      }
+      #toDo-list .list label {
+        width: 50px;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2 class="appName">To-Do List App</h2>
+      
+      <!-- Sign-Up Form -->
+      <div id="signup-section">
+        <h3>Sign Up</h3>
+        <form id="signup-form" onsubmit="signup(event)">
+          <div class="form-group">
+            <label for="signup-email">Email address</label>
+            <input type="email" class="form-control" id="signup-email" required>
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <input type="password" class="form-control" id="signup-password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Sign Up</button>
+        </form>
+      </div>
+
+      <!-- To-Do List Section -->
+      <div id="todo-section" class="mt-5" style="display:none;">
+        <div class="input-group mt-3">
+          <input type="text" class="form-control input" id="input" placeholder="Enter Task..." aria-label="Task">
+          <div class="input-group-append">
+            <button class="btn btn-outline-secondary" id="addTaskBtn" type="button" onclick="addTask()">Add Task</button>
+          </div>
+        </div>
+        <div class="list-item mt-3">
+          <ul id="toDo-list"></ul>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Initialize user data array in local storage if not present
+      let users = JSON.parse(localStorage.getItem('users')) || [];
+
+      function signup(event) {
+        event.preventDefault();
+
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+
+        // Check if user already exists
+        let user = users.find(user => user.email === email);
+
+        if (user) {
+          if (user.password === password) {
+            alert('Welcome back! Loading your to-do list.');
+            loadTodoList(user.id);
+          } else {
+            alert('Incorrect password. Please try again.');
+          }
+        } else {
+          // Create new user and save to local storage
+          const newUser = {
+            id: Date.now(),
+            email: email,
+            password: password,
+            todos: []
+          };
+          users.push(newUser);
+          localStorage.setItem('users', JSON.stringify(users));
+          alert('Sign up successful! You can now manage your to-do list.');
+          loadTodoList(newUser.id);
+        }
+      }
+
+      function loadTodoList(userId) {
+        const user = users.find(user => user.id === userId);
+        if (user) {
+          document.getElementById('signup-section').style.display = 'none';
+          document.getElementById('todo-section').style.display = 'block';
+
+          // Populate to-do list if it exists
+          const toDoList = document.getElementById('toDo-list');
+          toDoList.innerHTML = '';
+          user.todos.forEach((taskText) => {
+            addTaskToDOM(taskText);
+          });
+
+          // Save userId in session storage for further use
+          sessionStorage.setItem('loggedInUser', userId);
+        }
+      }
+
+      function addTaskToDOM(taskText) {
+        const li = document.createElement('li');
+        li.innerHTML = "<div class='list'><input type='checkbox' class='checkbox'>" +
+          "<label>" + taskText + "</label>" +
+          "<div class='col1'><button class='edit'>Edit</button>" +
+          "<button class='delete'>Delete</button></div></div>";
+        document.getElementById('toDo-list').appendChild(li);
+
+        // Strike-through completed task
+        li.querySelector('.checkbox').onclick = function () {
+          li.querySelector('label').style.textDecoration = 'line-through';
+        };
+
+        // Delete task
+        li.querySelector('.delete').onclick = function () {
+          li.remove();
+          saveTasks();
+        };
+
+        // Edit task
+        li.querySelector('.edit').onclick = function () {
+          const newTaskText = prompt('Edit your task:', taskText);
+          if (newTaskText !== null && newTaskText.trim() !== '') {
+            li.querySelector('label').innerText = newTaskText.trim();
+            saveTasks();
+          }
+        };
+      }
+
+      function addTask() {
+        const taskInput = document.getElementById('input');
+        const taskText = taskInput.value.trim();
+
+        if (taskText === '') {
+          alert('Task cannot be empty');
+          return;
+        }
+
+        const userId = parseInt(sessionStorage.getItem('loggedInUser'), 10);
+        const user = users.find(user => user.id === userId);
+
+        if (user) {
+          user.todos.push(taskText);
+          localStorage.setItem('users', JSON.stringify(users));
+          addTaskToDOM(taskText);
+          taskInput.value = '';
+        }
+      }
+
+      function saveTasks() {
+        const userId = parseInt(sessionStorage.getItem('loggedInUser'), 10);
+        const user = users.find(user => user.id === userId);
+
+        if (user) {
+          user.todos = Array.from(document.querySelectorAll('#toDo-list label')).map(label => label.innerText);
+          localStorage.setItem('users', JSON.stringify(users));
+        }
+      }
+    </script>
+  </body>
+</html>
